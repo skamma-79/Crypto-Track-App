@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Explore cryptocurrency prices, follow market movements, and keep your favorite assets together with CryptoTrack."
+    />
+    <meta name="theme-color" content="#0B1120" />
+    <title>CryptoTrack — Cryptocurrency Market Tracker</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <!-- Navigation: JavaScript switches views and updates aria-current. -->
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="./index.html" aria-label="CryptoTrack home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 15V19M12 9V19M19 5V19" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <path d="M4 9L10 4L15 6L20 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span>Crypto<span class="brand-accent">Track</span></span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+          <button id="home-btn" class="nav-btn is-active" type="button" aria-current="page" aria-controls="home-view" data-action="show-home">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+            Market
+          </button>
+          <button id="watchlist-btn" class="nav-btn" type="button" aria-controls="watchlist-view" data-action="show-watchlist">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z" />
+            </svg>
+            Watchlist
+            <span id="watchlist-count" class="count-badge">0</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="container dashboard" tabindex="-1">
+      <!-- Home is the only visible view. All financial values are placeholders. -->
+      <section id="home-view" class="view" aria-labelledby="home-heading">
+        <div class="page-heading">
+          <div class="heading-copy">
+            <p class="eyebrow"><span aria-hidden="true"></span>Cryptocurrency market</p>
+            <h1 id="home-heading" class="page-title">Market Overview<span class="heading-dot" aria-hidden="true">.</span></h1>
+            <p class="page-description">Track live cryptocurrency prices, monitor market trends, and manage your personal watchlist.</p>
+          </div>
+          <button id="refresh-btn" class="primary-btn" type="button" data-action="refresh">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20 7v5h-5M4 17v-5h5" />
+              <path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17" />
+            </svg>
+            Refresh Prices
+          </button>
+        </div>
+
+        <!-- Populate these summary values after market data is available. -->
+        <section class="summary-grid" aria-label="Market summary">
+          <article class="summary-card">
+            <div class="summary-card-header">
+              <h2 class="summary-label">Cryptocurrencies Tracked</h2>
+              <span class="summary-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M4 20V13M10 20V4M16 20V9M22 20H2" /></svg>
+              </span>
+            </div>
+            <p id="tracked-count" class="summary-value">--</p>
+            <p class="summary-caption">Top 20 by market capitalization</p>
+          </article>
+          <article class="summary-card">
+            <div class="summary-card-header">
+              <h2 class="summary-label">Top Gainer <span>(24h)</span></h2>
+              <span class="summary-icon positive" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="m4 17 6-6 4 4 6-9M14 6h6v6" /></svg>
+              </span>
+            </div>
+            <p id="top-gainer" class="summary-value positive">--</p>
+            <p class="summary-caption">Largest daily price increase</p>
+          </article>
+          <article class="summary-card">
+            <div class="summary-card-header">
+              <h2 class="summary-label">Top Loser <span>(24h)</span></h2>
+              <span class="summary-icon negative" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="m4 7 6 6 4-4 6 9M14 18h6v-6" /></svg>
+              </span>
+            </div>
+            <p id="top-loser" class="summary-value negative">--</p>
+            <p class="summary-caption">Largest daily price decrease</p>
+          </article>
+        </section>
+
+        <!-- Market panel: search, sorting, empty table, and exclusive UI states. -->
+        <section class="market-panel" aria-labelledby="market-heading">
+          <div class="panel-heading">
+            <div class="panel-title-group">
+              <h2 id="market-heading">Cryptocurrency prices</h2>
+              <span class="subtle-badge">Top 20 assets</span>
+            </div>
+            <p id="market-status" class="data-status" aria-live="polite"><span aria-hidden="true"></span>Data not loaded</p>
+          </div>
+
+          <div class="market-toolbar">
+            <search class="search-controls" aria-label="Search cryptocurrencies">
+              <label for="search-input" class="sr-only">Search by cryptocurrency name or symbol</label>
+              <div class="input-shell">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
+                <input id="search-input" type="search" name="query" placeholder="Search by name or symbol..." autocomplete="off" autocapitalize="none" enterkeyhint="search" spellcheck="false" aria-controls="coins-tbody" />
+              </div>
+              <button id="search-btn" class="secondary-btn search-btn" type="button" data-action="search">Search</button>
+            </search>
+            <div class="sort-controls">
+              <label for="sort-select">Sort by</label>
+              <div class="select-shell">
+                <select id="sort-select" name="sort" aria-controls="coins-tbody">
+                  <option value="market_cap">Market Cap</option>
+                  <option value="current_price">Price</option>
+                  <option value="price_change_percentage_24h">24h Price Change</option>
+                </select>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+              </div>
+              <button id="sort-direction-btn" class="icon-btn" type="button" aria-label="Sort direction: descending" title="Sort direction: descending" data-direction="desc" data-action="toggle-sort-direction">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 4v16m-4-4 4 4 4-4M15 5h6M15 10h4M15 15h2" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-scroll" role="region" aria-label="Cryptocurrency market prices, scroll horizontally to see all columns" tabindex="0">
+            <table class="market-table">
+              <caption class="sr-only">Cryptocurrency market prices in US dollars</caption>
+              <thead>
+                <tr>
+                  <th scope="col" class="rank-column"><span aria-hidden="true">#</span><span class="sr-only">Rank</span></th>
+                  <th scope="col" class="coin-column">Coin</th>
+                  <th scope="col" class="numeric">Price</th>
+                  <th scope="col" class="numeric">24h Change</th>
+                  <th scope="col" class="numeric">Market Cap</th>
+                  <th scope="col" class="watchlist-column">Watchlist</th>
+                </tr>
+              </thead>
+              <!-- Append .coin-row elements here. Use data-coin-id on rows and
+                   data-action="view-coin" / "toggle-watchlist" on their buttons.
+                   Use .coin-info, .coin-icon, .coin-name, .coin-symbol,
+                   .coin-price, .price-change, and .watchlist-toggle inside rows.
+                   Make the coin identity a real button or link for keyboard access. -->
+              <tbody id="coins-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Hide this initial placeholder when loading or showing a result state. -->
+          <div id="market-placeholder" class="state-message market-placeholder">
+            <span class="state-icon market-state-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none"><path d="M12 32V21M24 32V12M36 32V17M8 38h32" /><path class="accent-stroke" d="m9 15 10-6 10 3 10-7" /></svg>
+            </span>
+            <h3>Market data will appear here</h3>
+            <p>A clear view of prices, daily movements, and the assets you follow.</p>
+            <span class="placeholder-note">Ready for your next market insight</span>
+          </div>
+
+          <!-- JavaScript toggles hidden; skeletons never populate the table body. -->
+          <div id="market-loading" class="market-loading" role="status" aria-live="polite" hidden>
+            <p class="sr-only">Loading cryptocurrency prices. Please wait.</p>
+            <div class="skeleton-table" aria-hidden="true">
+              <div class="skeleton-row"><span class="skeleton skeleton-rank"></span><div class="skeleton-coin"><span class="skeleton skeleton-circle"></span><span class="skeleton skeleton-name"></span></div><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton skeleton-star"></span></div>
+              <div class="skeleton-row"><span class="skeleton skeleton-rank"></span><div class="skeleton-coin"><span class="skeleton skeleton-circle"></span><span class="skeleton skeleton-name"></span></div><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton skeleton-star"></span></div>
+              <div class="skeleton-row"><span class="skeleton skeleton-rank"></span><div class="skeleton-coin"><span class="skeleton skeleton-circle"></span><span class="skeleton skeleton-name"></span></div><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton skeleton-star"></span></div>
+              <div class="skeleton-row"><span class="skeleton skeleton-rank"></span><div class="skeleton-coin"><span class="skeleton skeleton-circle"></span><span class="skeleton skeleton-name"></span></div><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton skeleton-star"></span></div>
+            </div>
+          </div>
+
+          <div id="market-error" class="state-message error-state" role="alert" hidden>
+            <span class="state-icon error-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none"><path d="m22 8-16 28a2 2 0 0 0 2 3h32a2 2 0 0 0 2-3L26 8a2.3 2.3 0 0 0-4 0Z" /><path d="M24 19v8M24 32v1" /></svg>
+            </span>
+            <h3>Unable to load market data</h3>
+            <p>Please check your connection and try again.</p>
+            <button id="retry-btn" class="secondary-btn" type="button" data-action="retry">Try Again</button>
+          </div>
+
+          <div id="market-empty" class="state-message" role="status" aria-live="polite" hidden>
+            <span class="state-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none"><circle cx="21" cy="21" r="12" /><path d="m30 30 10 10M17 21h8" /></svg>
+            </span>
+            <h3>No cryptocurrencies found</h3>
+            <p>Try a different name or symbol to find the asset you are looking for.</p>
+            <button id="clear-search-btn" class="secondary-btn" type="button" data-action="clear-search">Clear Search</button>
+          </div>
+
+          <div class="panel-footer">
+            <p>All prices in <span>USD</span></p>
+            <p class="table-scroll-hint">Scroll horizontally to see all columns <span aria-hidden="true">&rarr;</span></p>
+            <p class="panel-footer-note">Your next insight starts with the numbers.</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- Watchlist: show the table only when saved coins are available. -->
+      <section id="watchlist-view" class="view" aria-labelledby="watchlist-heading" hidden>
+        <div class="page-heading">
+          <div class="heading-copy">
+            <p class="eyebrow"><span aria-hidden="true"></span>Your personal market</p>
+            <h2 id="watchlist-heading" class="page-title">My Watchlist<span class="heading-dot" aria-hidden="true">.</span></h2>
+            <p class="page-description">Keep the assets you care about in one place. Follow their prices and daily movements.</p>
+          </div>
+          <button id="watchlist-back-btn" class="secondary-btn" type="button" data-action="show-home">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" /></svg>
+            Market Overview
+          </button>
+        </div>
+        <div class="market-panel">
+          <div class="panel-heading">
+            <h3>Saved cryptocurrencies</h3>
+            <span class="subtle-badge">Your collection</span>
+          </div>
+          <div id="watchlist-table-container" class="table-scroll" role="region" aria-label="Watchlist prices, scroll horizontally to see all columns" tabindex="0" hidden>
+            <table class="market-table">
+              <caption class="sr-only">Saved cryptocurrency prices in US dollars</caption>
+              <thead>
+                <tr>
+                  <th scope="col" class="rank-column"><span aria-hidden="true">#</span><span class="sr-only">Rank</span></th>
+                  <th scope="col" class="coin-column">Coin</th>
+                  <th scope="col" class="numeric">Price</th>
+                  <th scope="col" class="numeric">24h Change</th>
+                  <th scope="col" class="numeric">Market Cap</th>
+                  <th scope="col" class="watchlist-column">Remove</th>
+                </tr>
+              </thead>
+              <tbody id="watchlist-tbody"></tbody>
+            </table>
+          </div>
+          <div id="watchlist-empty" class="state-message watchlist-empty">
+            <span class="state-icon watchlist-state-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none"><path d="m24 7 5.3 10.7 11.8 1.7-8.5 8.3 2 11.8L24 34l-10.6 5.5 2-11.8-8.5-8.3 11.8-1.7L24 7Z" /></svg>
+            </span>
+            <h3>Your watchlist is empty</h3>
+            <p>A few favorites. A little more focus. Use the star next to a cryptocurrency to save it here.</p>
+            <button id="explore-market-btn" class="primary-btn" type="button" data-action="show-home">
+              Explore Market
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Detail: replace placeholders with the selected coin's actual data. -->
+      <section id="detail-view" class="view detail-view" aria-labelledby="detail-coin-name" hidden>
+        <button id="back-btn" class="text-btn back-btn" type="button" data-action="show-home">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" /></svg>
+          Back to market
+        </button>
+        <div id="coin-detail-content" class="detail-content">
+          <div class="detail-overview">
+            <div class="detail-identity-panel">
+              <p class="eyebrow"><span aria-hidden="true"></span>Asset overview</p>
+              <div class="detail-identity">
+                <!-- Replace the neutral SVG with an API-provided coin image. -->
+                <div id="detail-coin-logo" class="detail-coin-logo" aria-hidden="true">
+                  <svg viewBox="0 0 48 48" fill="none"><path d="m24 7 14 17-14 17L10 24 24 7Z" /><path d="m10 24 14 6 14-6M24 7v34" /></svg>
+                </div>
+                <div class="detail-coin-title">
+                  <h2 id="detail-coin-name">--</h2>
+                  <p id="detail-coin-symbol" class="coin-symbol">--</p>
+                </div>
+              </div>
+              <button id="detail-watchlist-btn" class="secondary-btn detail-watchlist-btn" type="button" aria-pressed="false" data-action="toggle-watchlist">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z" /></svg>
+                <span id="detail-watchlist-label">Add to watchlist</span>
+              </button>
+            </div>
+            <div class="detail-price-panel">
+              <p class="detail-label">Current price <span>USD</span></p>
+              <p id="detail-price" class="detail-price">--</p>
+              <div class="detail-price-change">
+                <span id="detail-change" class="price-change">--</span>
+                <span>Past 24 hours</span>
+              </div>
+            </div>
+          </div>
+
+          <section class="detail-statistics" aria-labelledby="detail-stats-heading">
+            <h3 id="detail-stats-heading" class="section-title">Market statistics</h3>
+            <dl class="detail-stats-grid">
+              <div class="detail-stat"><dt>Market capitalization</dt><dd id="detail-market-cap">--</dd></div>
+              <div class="detail-stat"><dt>Market cap rank</dt><dd id="detail-rank">--</dd></div>
+              <div class="detail-stat"><dt>Total volume</dt><dd id="detail-volume">--</dd></div>
+              <div class="detail-stat"><dt>Circulating supply</dt><dd id="detail-supply">--</dd></div>
+            </dl>
+          </section>
+          <section class="detail-description" aria-labelledby="detail-about-heading">
+            <h3 id="detail-about-heading" class="section-title">About this asset</h3>
+            <p id="detail-description">--</p>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div class="footer-brand-group">
+          <p class="footer-brand">Crypto<span class="brand-accent">Track</span><span class="footer-divider" aria-hidden="true"></span></p>
+          <p class="footer-disclaimer">Cryptocurrency prices may change.</p>
+        </div>
+        <a class="attribution" href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer">
+          Market data powered by <span>CoinGecko</span>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 4h6v6m-1-5L9 15M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" /></svg>
+          <span class="sr-only"> (opens in a new tab)</span>
+        </a>
+      </div>
+    </footer>
+
+    <!-- Existing entry file uses an uppercase A; keep the actual filesystem case. -->
+    <script type="module" src="./js/App.js"></script>
+  </body>
+</html>
