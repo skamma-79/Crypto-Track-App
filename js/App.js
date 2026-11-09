@@ -1,5 +1,5 @@
 
-import { fetchTopCoins } from ".Api.js";
+import { fetchTopCoins } from "./Api.js";
 
 async function init() {
   try {
