@@ -1,5 +1,5 @@
-
-import { fetchTopCoins, searchCoins } from "./Api.js";
+import { getWatchlist, toggleWatchlist } from "./storage.js";
+import { fetchTopCoins, searchCoins, fetchCoinDetails } from "./Api.js";
 
 const tableBody = document.getElementById("coins-tbody");
 
@@ -36,10 +36,14 @@ function createCell(text, className = "") {
   return td;
 }
 
+// Watchlist table ki body ko select karna
+const watchlistBody = document.getElementById("watchlist-tbody");
 
- // API se aaye saare coins ko HTML table mein dikhane ke liye
- // init() data leke aata hai rendercoins() data dikhata hai
-function renderCoins(coins) {
+
+// API se aaye saare coins ko HTML table mein dikhane ke liye
+// init() data leke aata hai rendercoins() data dikhata hai
+// Coins ko Market ya Watchlist ki table mein dikhane ke liye
+function renderCoins(coins, targetBody = tableBody) {
 
   // Saari rows ko pehle ek temporary jagah rakhna
   const fragment = document.createDocumentFragment();
@@ -73,6 +77,9 @@ function renderCoins(coins) {
 
     // Button ko batana ki coin ki details dikhani hain
     button.dataset.action = "view-coin";
+    //data-action="view-coin" button ko ek label deta hai.
+    //JavaScript click event mein us label ko check karta hai.
+    //Label match hone par uske andar likha code execute hota hai.
 
     // Coin ka logo dikhane ke liye image banana
     const image = document.createElement("img");
@@ -169,17 +176,27 @@ function renderCoins(coins) {
     // Star button ko CSS class dena
     star.className = "watchlist-toggle";
 
-    // Button par khaali star dikhana
-    star.textContent = "☆";
 
-    // Star button ki pehchan rakhna, taaki baad mein click handle ho
+    // Coin watchlist mein saved hai ya nahi, ye check karna
+    const isSaved = getWatchlist().some((item) => item.id === coin.id);
+
+    // Saved hai to bhara star, warna khaali star dikhana
+    star.textContent = isSaved ? "★" : "☆";
+
+    // Star button ko watchlist wali pehchan dena
     star.dataset.action = "toggle-watchlist";
 
-    // Screen reader ke liye button ka naam rakhna
-    star.setAttribute("aria-label", `Add ${coin.name} to watchlist`);
+    // Saved coin ke star par alag CSS color lagana
+    star.classList.toggle("is-active", isSaved);
 
-    // Shuru mein star selected nahi hai
-    star.setAttribute("aria-pressed", "false");
+    // Screen reader ko batana coin add hoga ya remove
+    star.setAttribute(
+      "aria-label",
+      `${isSaved ? "Remove" : "Add"} ${coin.name} ${isSaved ? "from" : "to"} watchlist`
+    );
+
+    // Button selected hai ya nahi, wo batana
+    star.setAttribute("aria-pressed", String(isSaved));
 
     // Star button ko cell mein dalna
     watchCell.append(star);
@@ -197,8 +214,11 @@ function renderCoins(coins) {
 
   // ===== TABLE UPDATE =====
 
-  // Purani rows hata kar nayi rows table mein dikhana
-  tableBody.replaceChildren(fragment);
+  // Taiyar rows ko jis table mein chahiye, usmein dikhana
+  targetBody.replaceChildren(fragment);
+
+  // Watchlist ki table hai to Market ka status change mat karo
+  if (targetBody !== tableBody) return;
 
   // Data aane ke baad starting wala message chhupana
   document.getElementById("market-placeholder").hidden = true;
@@ -212,21 +232,79 @@ function renderCoins(coins) {
 
 
 
- // Search box ko select karna
+// Search box ko select karna
 const searchInput = document.getElementById("search-input");
 
 // API call chal rahi hai ya nahi, ye check karne ke liye
 let isLoading = false;
+let pendingQuery = null;
+let searchTimer;
+
+// API se aaye coins ko save karke rakhne ke liye
+let currentCoins = [];
+
+// Currently selected coin ki details store karne ke liye
+let selectedCoin = null;
+
+let selectedCoinData = null;
+
+
+// Coins ko price, market cap ya 24h change se sort karne ke liye
+function sortCoins() {
+
+  // Coins ka data nahi hai to sorting mat karo
+  if (currentCoins.length === 0) return;
+
+  // User ne sorting mein kya select kiya hai, wo lena
+  const sortBy = document.getElementById("sort-select").value;
+
+  // Sorting ki direction lene ke liye button select karna
+  const directionBtn = document.getElementById("sort-direction-btn");
+
+  // Ascending ya descending direction lena
+  const direction = directionBtn.dataset.direction;
+
+  // Coins ki copy banakar unko sort karna
+  const sortedCoins = [...currentCoins].sort((a, b) => {
+
+    // Dono coins ki selected value lena
+    const aValue = a[sortBy];
+    const bValue = b[sortBy];
+
+    // Dono coins ki value missing ho to order same rakhna
+    if (aValue == null && bValue == null) return 0;
+
+    // Pehle coin ki value missing ho to use last mein rakhna
+    if (aValue == null) return 1;
+
+    // Dusre coin ki value missing ho to use last mein rakhna
+    if (bValue == null) return -1;
+
+    // Ascending mein chhoti value pehle, descending mein badi
+    return direction === "asc"
+      ? aValue - bValue
+      : bValue - aValue;
+  });
+
+  // Sort kiye hue coins ko table mein dikhana
+  renderCoins(sortedCoins);
+}
 
 
 // Search ya refresh karne par coins ka data lana
 async function init(query = "") {
 
-  // Data pehle se aa raha hai to dobara API call nahi karna
-  if (isLoading) return;
+  // Data pehle se aa raha hai to latest query baad mein chalana
+  if (isLoading) {
+    pendingQuery = query;
+    return;
+  }
 
   // Loading shuru ho gayi
   isLoading = true;
+
+  // Nayi search shuru hone par purane coins ka data hata dena
+  currentCoins = [];
 
   // Refresh aur retry buttons select karna
   const refreshBtn = document.getElementById("refresh-btn");
@@ -268,8 +346,11 @@ async function init(query = "") {
 
     } else {
 
-      // Mile hue coins ko table mein dikhana
-      renderCoins(coins);
+      // API se aaye coins ko save karke rakhna
+      currentCoins = coins;
+
+      // Coins ko selected order mein table par dikhana
+      sortCoins();
     }
 
   } catch (error) {
@@ -293,20 +374,321 @@ async function init(query = "") {
 
     // Ab API call complete ho gayi
     isLoading = false;
+
+    if (pendingQuery !== null) {
+      const nextQuery = pendingQuery;
+      pendingQuery = null;
+      init(nextQuery);
+    }
   }
 }
 
 
+function debounceSearch() {
+  clearTimeout(searchTimer);
+
+  searchTimer = setTimeout(() => {
+    init(searchInput.value.trim());
+  }, 500);
+}
+
+
+// Saved coins ko My Watchlist page par dikhane ke liye
+function renderWatchlist() {
+
+  // Browser se saved coins lena
+  const savedCoins = getWatchlist();
+
+  // Navigation mein saved coins ki counting dikhana
+  document.getElementById("watchlist-count").textContent = savedCoins.length;
+
+  // Coins saved hain to watchlist ki table dikhana
+  document.getElementById("watchlist-table-container").hidden =
+    savedCoins.length === 0;
+
+  // Koi coin saved nahi hai to empty message dikhana
+  document.getElementById("watchlist-empty").hidden =
+    savedCoins.length > 0;
+
+  // Saved coins ko Watchlist ki table mein dikhana
+  renderCoins(savedCoins, watchlistBody);
+}
+
+
+// Market aur Watchlist page ke beech change karne ke liye
+function showView(view) {
+
+  // User Watchlist dekhna chahta hai ya nahi
+  const isWatchlist = view === "watchlist";
+  const isDetail = view === "detail";
+
+
+  document.getElementById("home-view").hidden =
+    isWatchlist || isDetail;
+
+  document.getElementById("watchlist-view").hidden =
+    !isWatchlist;
+
+  document.getElementById("detail-view").hidden =
+    !isDetail;
+
+  // Navigation ke dono buttons lena
+  const homeBtn = document.getElementById("home-btn");
+  const watchlistBtn = document.getElementById("watchlist-btn");
+
+  // Jo page khula hai uske button ko active dikhana
+  homeBtn.classList.toggle("is-active", !isWatchlist);
+  watchlistBtn.classList.toggle("is-active", isWatchlist);
+
+  // Screen reader ko batana kaunsa page khula hai
+  if (isWatchlist) {
+
+    watchlistBtn.setAttribute("aria-current", "page");
+    homeBtn.removeAttribute("aria-current");
+
+  } else {
+
+    homeBtn.setAttribute("aria-current", "page");
+    watchlistBtn.removeAttribute("aria-current");
+  }
+}
+
+
+async function openCoinDetails(coinId) {
+
+  try {
+
+    // Selected coin ki ID save karna
+    selectedCoin = coinId;
+
+    // Detail view open karna
+    showView("detail");
+
+    // Loading status dikhana
+    document.getElementById("detail-coin-name").textContent = "Loading...";
+
+    // API se selected coin ki details fetch karna
+    const coin = await fetchCoinDetails(coinId);
+
+    // Agar user ne meanwhile doosra coin select kiya ho
+    if (selectedCoin !== coinId) return;
+
+    // Coin ki complete details save karna
+    selectedCoin = coin.id;
+
+    selectedCoinData = coin;
+
+    // Details ko UI mein display karna
+    renderCoinDetails(coin);
+
+  } catch (error) {
+
+    // API error ko UI mein show karna
+    document.getElementById("detail-coin-name").textContent =
+      "Unable to load coin details.";
+
+    document.getElementById("detail-description").textContent =
+      "Please try again later.";
+
+  }
+
+}
+
+
+function renderCoinDetails(coin) {
+
+  // Coin ka logo display karna
+  const logo = document.getElementById("detail-coin-logo");
+  const image = document.createElement("img");
+
+  image.src = coin.image.large;
+  image.alt = coin.name;
+
+  logo.replaceChildren(image);
+
+  // Coin ka naam aur symbol
+  document.getElementById("detail-coin-name").textContent = coin.name;
+
+  document.getElementById("detail-coin-symbol").textContent =
+    coin.symbol.toUpperCase();
+
+  // Market data ko ek variable mein lena
+  const market = coin.market_data;
+
+  // Current price
+  document.getElementById("detail-price").textContent =
+    formatPrice(market.current_price.usd);
+
+  // 24 hours price change
+  const change = market.price_change_percentage_24h;
+  const changeElement = document.getElementById("detail-change");
+
+  changeElement.textContent =
+    change == null ? "--" : `${change.toFixed(2)}%`;
+
+  changeElement.className =
+    `price-change ${change >= 0 ? "positive" : "negative"}`;
+
+  // Market statistics
+  document.getElementById("detail-market-cap").textContent =
+    formatPrice(market.market_cap.usd);
+
+  document.getElementById("detail-rank").textContent =
+    coin.market_cap_rank ?? "--";
+
+  document.getElementById("detail-volume").textContent =
+    formatPrice(market.total_volume.usd);
+
+  document.getElementById("detail-supply").textContent =
+    market.circulating_supply?.toLocaleString("en-US") ?? "--";
+
+  // Coin description
+  const description = coin.description?.en || "No description available.";
+
+  document.getElementById("detail-description").textContent =
+    description.replace(/<[^>]*>/g, " ").trim();
+
+    // Check karna ki coin watchlist mein saved hai ya nahi
+const isSaved = getWatchlist().some(
+  (item) => item.id === coin.id
+);
+
+// Detail View ka watchlist button update karna
+const watchlistBtn = document.getElementById("detail-watchlist-btn");
+
+watchlistBtn.setAttribute("aria-pressed", String(isSaved)); //String() → Boolean ko string mein convert karta hai.
+
+document.getElementById("detail-watchlist-label").textContent =
+  isSaved ? "Remove from watchlist" : "Add to watchlist";
+
+watchlistBtn.classList.toggle("is-active", isSaved); //isSaved → true hai toh class add, false hai toh remove.
+
+}
+
+
+// Kisi bhi coin ke star par click hone ko check karna
+document.addEventListener("click", (event) => {
+
+  // Coin details button par click check karna
+const coinButton = event.target.closest('[data-action="view-coin"]');
+
+if (coinButton) {
+
+  // Button ki parent row se coin ID lena
+  const row = coinButton.closest("tr[data-coin-id]");
+
+  if (!row) return;
+
+  // Selected coin ki details open karna
+  openCoinDetails(row.dataset.coinId);
+
+  return;
+}
+
+  // Click hua star button dhundhna
+  const star = event.target.closest('[data-action="toggle-watchlist"]');
+
+  // Star button par click nahi hua to kuch mat karo
+  if (!star) return;
+
+  // Star kis coin ki row mein hai, wo dhundhna
+  const row = star.closest("tr[data-coin-id]");
+
+  // Coin ki row nahi mili to abhi kuch mat karo
+  if (!row) return;
+
+  // Row se coin ki unique ID lena
+  const coinId = row.dataset.coinId;
+
+  // Coin ko current API data ya saved watchlist mein dhundhna
+  const coin =
+    currentCoins.find((item) => item.id === coinId) ||
+    getWatchlist().find((item) => item.id === coinId);
+
+  // Coin ka data nahi mila to kuch mat karo
+  if (!coin) return;
+
+  // Coin ko watchlist mein add ya remove karna
+  const saved = toggleWatchlist(coin);
+
+  // Save karne mein error aaya to aage mat badho
+  if (!saved) return;
+
+  // My Watchlist aur saved coins ki counting update karna
+  renderWatchlist();
+
+  // Market ke stars bhi naye saved status ke saath dikhana
+  if (currentCoins.length > 0) {
+    sortCoins();
+  }
+});
+
+
+
+// Search input mein typing rukne ke baad coin dhundhna
+searchInput.addEventListener("input", debounceSearch);
+
+
 // Search button par click karne se coin dhundhna
 document.getElementById("search-btn").addEventListener("click", () => {
+  clearTimeout(searchTimer);
   init(searchInput.value.trim());
 });
+
+
+// Sorting select karne par coins ka order badalna
+document.getElementById("sort-select").addEventListener("change", () => {
+
+  // Coins ko naye selected option ke hisaab se sort karna
+  sortCoins();
+});
+
+
+// Sorting direction button ko select karna
+const sortDirectionBtn = document.getElementById("sort-direction-btn");
+
+
+// Direction button dabane par order ulta karna
+sortDirectionBtn.addEventListener("click", () => {
+
+  // Abhi descending hai to ascending, warna descending karna
+  sortDirectionBtn.dataset.direction =
+    sortDirectionBtn.dataset.direction === "desc" ? "asc" : "desc";
+
+  // Button par nayi direction ka naam dikhana
+  const label = sortDirectionBtn.dataset.direction === "asc"
+    ? "Sort direction: ascending"
+    : "Sort direction: descending";
+
+  // Button ka naam update karna
+  sortDirectionBtn.setAttribute("aria-label", label);
+
+  // Mouse le jane par nayi direction batana
+  sortDirectionBtn.title = label;
+
+  // Button ke arrow ko direction ke hisaab se ghumana
+  sortDirectionBtn.querySelector("svg").style.transform =
+    sortDirectionBtn.dataset.direction === "asc"
+      ? "rotate(180deg)"
+      : "rotate(0deg)";
+
+  // Nayi direction ke hisaab se coins dikhana
+  sortCoins();
+});
+
+
+// Detail View se Home par wapas jaana
+document.getElementById("back-btn").addEventListener("click", () => {
+  showView("home");
+});
+
 
 
 // Enter dabane par bhi search chalana
 searchInput.addEventListener("keydown", (event) => {
 
   if (event.key === "Enter") {
+    clearTimeout(searchTimer);
     init(searchInput.value.trim());
   }
 });
@@ -335,5 +717,65 @@ document.getElementById("clear-search-btn").addEventListener("click", () => {
 });
 
 
-// Website khulte hi top 20 coins dikhana
+// My Watchlist button dabane par saved coins dikhana
+document.getElementById("watchlist-btn").addEventListener("click", () => {
+
+  // Watchlist ka latest saved data dikhana
+  renderWatchlist();
+
+  // Watchlist page kholna
+  showView("watchlist");
+});
+
+
+// Market button dabane par home page dikhana
+document.getElementById("home-btn").addEventListener("click", () => {
+
+  // Market page kholna
+  showView("home");
+});
+
+
+// Watchlist ke Back button par Market page kholna
+document.getElementById("watchlist-back-btn").addEventListener("click", () => {
+
+  // Market page dikhana
+  showView("home");
+});
+
+
+// Explore Market button par Market page kholna
+document.getElementById("explore-market-btn").addEventListener("click", () => {
+
+  // Market page dikhana
+  showView("home");
+});
+
+
+// Page khulte hi saved coins ki counting update karna
+renderWatchlist();
+
+
+// Page khulte hi API se coins lana
 init();
+
+
+// Detail View ke Watchlist button par click
+document.getElementById("detail-watchlist-btn").addEventListener("click", () => {
+
+  // Selected coin available hai ya nahi
+  if (!selectedCoinData) return;
+
+  // Coin ko LocalStorage mein add/remove karna
+  const saved = toggleWatchlist(selectedCoinData);
+  //toggleWatchlist → storage.js mein bana hua function hai.
+  //selectedCoinData → Current selected coin ka data hai Function ko argument ke roop mein pass ho raha hai
+
+  // Save successful hua to UI update karna
+  if (saved) {
+    renderWatchlist();
+    renderCoinDetails(selectedCoinData);
+    sortCoins();
+  }
+
+});
