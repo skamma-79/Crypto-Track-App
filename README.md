@@ -25,6 +25,17 @@ Live Demo: https://crypto-track-app-phi.vercel.app/
 - **Empty State:** Handles searches with no matching results.
 - **Responsive Design:** Supports desktop, tablet, and mobile screens.
 
+## 📸 Screenshots
+
+### Home / Market Dashboard
+![Home](screenshots/home.png)
+
+### Watchlist
+![Watchlist](screenshots/watchlist.png)
+
+### Coin Details
+![Coin Details](screenshots/coin-details.png)
+
 ## 🛠️ Technologies Used
 
 - HTML5
