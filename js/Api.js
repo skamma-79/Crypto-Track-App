@@ -69,3 +69,38 @@ export async function searchCoins(query) {
     throw error;
   }
 }
+
+
+
+// Individual coin ki complete details fetch karne ke liye
+export async function fetchCoinDetails(coinId) {
+  //Tumhare App.js mein jab user kisi coin par click karega, tab us coin ki ID pass ki jaayegi.
+  // Ex- fetchCoinDetails("bitcoin");
+
+  try {
+
+    // CoinGecko API se selected coin ki details lena
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(coinId)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`
+    );
+
+    // API response successful nahi hai to error throw karna
+    if (!response.ok) {
+      throw new Error(`Coin Details Error: ${response.status}`);
+    }
+
+    // API response ko JavaScript object mein convert karna
+    const data = await response.json();
+
+    // Complete coin details return karna
+    return data;
+
+  } catch (error) {
+
+    // Error ko console mein show karna
+    console.error("Failed to fetch coin details:", error);
+
+    // Error ko App.js tak forward karna
+    throw error;
+  }
+}
