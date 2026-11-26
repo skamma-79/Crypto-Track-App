@@ -237,6 +237,7 @@ const searchInput = document.getElementById("search-input");
 
 // API call chal rahi hai ya nahi, ye check karne ke liye
 let isLoading = false;
+let searchTimer;
 
 // API se aaye coins ko save karke rakhne ke liye
 let currentCoins = [];
@@ -370,6 +371,15 @@ async function init(query = "") {
     // Ab API call complete ho gayi
     isLoading = false;
   }
+}
+
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+
+  searchTimer = setTimeout(() => {
+    init(searchInput.value.trim());
+  }, 500);
 }
 
 
@@ -605,8 +615,13 @@ if (coinButton) {
 
 
 
+// Search input mein typing rukne ke baad coin dhundhna
+searchInput.addEventListener("input", debounceSearch);
+
+
 // Search button par click karne se coin dhundhna
 document.getElementById("search-btn").addEventListener("click", () => {
+  clearTimeout(searchTimer);
   init(searchInput.value.trim());
 });
 
@@ -663,6 +678,7 @@ document.getElementById("back-btn").addEventListener("click", () => {
 searchInput.addEventListener("keydown", (event) => {
 
   if (event.key === "Enter") {
+    clearTimeout(searchTimer);
     init(searchInput.value.trim());
   }
 });
