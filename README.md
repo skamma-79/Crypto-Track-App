@@ -4,7 +4,7 @@ A responsive cryptocurrency market tracking application built using **HTML, CSS,
 
 ## 🚀 Live Demo
 
-Coming soon — deployed on Vercel.
+Live Demo: https://crypto-track-app-phi.vercel.app/
 
 ## 📌 GitHub Repository
 
