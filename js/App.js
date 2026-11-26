@@ -237,6 +237,7 @@ const searchInput = document.getElementById("search-input");
 
 // API call chal rahi hai ya nahi, ye check karne ke liye
 let isLoading = false;
+let pendingQuery = null;
 let searchTimer;
 
 // API se aaye coins ko save karke rakhne ke liye
@@ -293,8 +294,11 @@ function sortCoins() {
 // Search ya refresh karne par coins ka data lana
 async function init(query = "") {
 
-  // Data pehle se aa raha hai to dobara API call nahi karna
-  if (isLoading) return;
+  // Data pehle se aa raha hai to latest query baad mein chalana
+  if (isLoading) {
+    pendingQuery = query;
+    return;
+  }
 
   // Loading shuru ho gayi
   isLoading = true;
@@ -370,6 +374,12 @@ async function init(query = "") {
 
     // Ab API call complete ho gayi
     isLoading = false;
+
+    if (pendingQuery !== null) {
+      const nextQuery = pendingQuery;
+      pendingQuery = null;
+      init(nextQuery);
+    }
   }
 }
 

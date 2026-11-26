@@ -1,6 +1,13 @@
-
+const apiCache = new Map();
+const CACHE_DURATION = 60 * 1000;
 
 async function fetchApiData(url, errorType) {
+  const cachedData = apiCache.get(url);
+
+  if (cachedData && Date.now() - cachedData.time < CACHE_DURATION) {
+    return cachedData.data;
+  }
+
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -13,7 +20,14 @@ async function fetchApiData(url, errorType) {
     );
   }
 
-  return await response.json();
+  const data = await response.json();
+
+  apiCache.set(url, {
+    data,
+    time: Date.now()
+  });
+
+  return data;
 }
 
 
