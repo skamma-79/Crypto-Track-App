@@ -4,7 +4,7 @@ A responsive cryptocurrency market tracking application built using **HTML, CSS,
 
 ## 🚀 Live Demo
 
-Live Demo: https://crypto-track-app-phi.vercel.app/
+[CryptoTrack Live Demo](https://crypto-track-app-phi.vercel.app/)
 
 ## 📌 GitHub Repository
 
@@ -28,13 +28,16 @@ Live Demo: https://crypto-track-app-phi.vercel.app/
 ## 📸 Screenshots
 
 ### Home / Market Dashboard
-![Home](screenshots/home.png)
+
+![Home](screenshots/screencapture-crypto-track-app-phi-vercel-app-2026-11-26-16_03_51.png)
 
 ### Watchlist
-![Watchlist](screenshots/watchlist.png)
+
+![Watchlist](screenshots/screencapture-crypto-track-app-phi-vercel-app-index-html-2026-11-26-16_04_15.png)
 
 ### Coin Details
-![Coin Details](screenshots/coin-details.png)
+
+![Coin Details](screenshots/screencapture-crypto-track-app-phi-vercel-app-index-html-2026-11-26-16_05_47.png)
 
 ## 🛠️ Technologies Used
 
@@ -54,7 +57,7 @@ Live Demo: https://crypto-track-app-phi.vercel.app/
 
 CryptoTrack uses the CoinGecko API to retrieve cryptocurrency market information.
 
-API Documentation: https://docs.coingecko.com/
+API Documentation: [CoinGecko API Docs](https://docs.coingecko.com/)
 
 Main API endpoints:
 
@@ -67,8 +70,6 @@ Main API endpoints:
 ```text
 crypto-market-tracker/
 │
-├── assets/
-│
 ├── css/
 │   └── style.css
 │
@@ -77,6 +78,7 @@ crypto-market-tracker/
 │   ├── App.js
 │   └── storage.js
 │
+├── screenshots/
 ├── index.html
 └── README.md
 ```
