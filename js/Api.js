@@ -1,15 +1,27 @@
 
+
+async function fetchApiData(url, errorType) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error("API rate limit exceeded. Try again later.");
+    }
+
+    throw new Error(
+      `${errorType} failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return await response.json();
+}
+
+
 export async function fetchTopCoins() {
   const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=false";
 
   try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await fetchApiData(url, "Market API");
     return data;
 
   } catch (error) {
@@ -26,17 +38,10 @@ export async function searchCoins(query) {
   try {
 
     // CoinGecko par user ke likhe naam se coin dhundhna
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`
+    const data = await fetchApiData(
+      `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`,
+      "Search API"
     );
-
-    // API se data na mile to error dikhana
-    if (!response.ok) {
-      throw new Error(`Search Error: ${response.status}`);
-    }
-
-    // API ka response JavaScript object mein lena
-    const data = await response.json();
 
     // Search mein mile pehle 10 coins lena
     const matches = data.coins.slice(0, 10);
@@ -48,17 +53,10 @@ export async function searchCoins(query) {
     const ids = matches.map((coin) => coin.id).join(",");
 
     // In coins ki price aur market cap ka data lana
-    const marketResponse = await fetch(
-      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&sparkline=false`
+    return await fetchApiData(
+      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&sparkline=false`,
+      "Market API"
     );
-
-    // Market data na mile to error dikhana
-    if (!marketResponse.ok) {
-      throw new Error(`Market Error: ${marketResponse.status}`);
-    }
-
-    // Price aur market cap wala data wapas bhejna
-    return await marketResponse.json();
 
   } catch (error) {
 
@@ -80,20 +78,10 @@ export async function fetchCoinDetails(coinId) {
   try {
 
     // CoinGecko API se selected coin ki details lena
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(coinId)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`
+    return await fetchApiData(
+      `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(coinId)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`,
+      "Coin Details API"
     );
-
-    // API response successful nahi hai to error throw karna
-    if (!response.ok) {
-      throw new Error(`Coin Details Error: ${response.status}`);
-    }
-
-    // API response ko JavaScript object mein convert karna
-    const data = await response.json();
-
-    // Complete coin details return karna
-    return data;
 
   } catch (error) {
 
